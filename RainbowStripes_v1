@@ -1,0 +1,120 @@
+#include <FastLED.h>
+
+#include <LEDMatrix.h>
+//*************************************************************************************************
+//                                   
+//  RainbowStripes();         This is an upgraded version of the Previous RanbowStripes function that i had made in the file called "ScrollingRainbow
+//                            With this update i have made it so that the matrix is divided into seperate sections (Scrolling Right or Scrolling Left)
+//                            This time it is udated so that the rainbow stripes will start out on a random X location that is somewhere that does not exist on the matrix (either > MATRIX_WIDTH or <MATRIX_WIDTH)
+//                            they will then make their way towards the visibal boundaries of the matrix and begin to light up.  
+//
+//                            NOTE: For future improvements i would like to add even more rainbowstripes onto the matrix, this time moving vertically up and down the matrix.  
+//
+//*************************************************************************************************
+#define LED_PIN        7
+#define COLOR_ORDER    GRB
+#define CHIPSET        WS2812B
+
+#define MATRIX_WIDTH   24  // Set this negative if physical led 0 is opposite to where you want logical 0
+#define MATRIX_HEIGHT  20  // Set this negative if physical led 0 is opposite to where you want logical 0
+#define NUM_LEDS MATRIX_WIDTH * MATRIX_HEIGHT
+#define MATRIX_TYPE    HORIZONTAL_ZIGZAG_MATRIX  // See top of LEDMatrix.h for matrix wiring types
+
+cLEDMatrix<MATRIX_WIDTH, MATRIX_HEIGHT, MATRIX_TYPE> leds;
+
+//----------------------------GLOBAL VERIABLES-----------------------------------------------------
+int angle = 0;                                                        //used to change hue  
+                                             
+int Stripes = 3;                                                      //Initialize stripes as the maximum numer of stries moving in one direction
+                                                                      //Example:If you have 2 stripes moving right, and 3 stripes moving left, you would initialize "Stripes" equal to 3  
+int xPositionRight[3], xPositionLeft[3], xTail[3];                    //Arrays that will hold different values 
+                                                                      //xPositionRight (scrolling Right x < MATRIX_WIDTH)
+                                                                      //xPositionLeft (scrolling Left x > MATRIX_WIDTH)
+                                                                      //xTail is how long you want the stripes to be (Horizontal)
+void setup()
+{
+  FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds[0], leds.Size());
+  FastLED.setBrightness(45);
+ // set_max_power_in_volts_and_milliamps(5, 12000);       
+  //Safety procotion, stating that i am using 5V 12A power supply (Max)
+  Serial.begin(9600);
+  Serial.println("The rogram has started");
+  FastLED.clear(true);
+  delay(500);
+  FastLED.showColor(CRGB::Lime);
+  delay(1000);
+
+  for(int i = 0; i < Stripes; i++){           //Initial setup, assigning random values to each of the global variables shown above
+    xPositionRight[i] = random(-50, -40);      //Random x position from -20 to -5 MOVING RIGHT
+    xPositionLeft[i]  = random(40, 50);       //Random x position from 40 to 50  MOVING LEFT 
+
+    xTail[i] = random(MATRIX_WIDTH, MATRIX_WIDTH + 10); //Random Tail Length
+  }
+}
+
+
+void loop(){
+  RainbowStripes();
+}
+
+void fadeall(){                           //Quick Function to call that will fade all the LEDs 
+  for(int i = 0; i <= NUM_LEDS; i++){
+    leds(i).nscale8(248);                 //Adjust this value for variations in fade 
+  }
+}
+
+void RainbowStripes(){
+  int hue = sin8(angle);
+
+  for(byte i = 0; i < Stripes; i++){
+    xPositionRight[i] = xPositionRight[i] + 1;            //xPositionRight = its current position + 1.  This will move the stripe to the Right 
+    xPositionLeft[i] = xPositionLeft[i] -1;               //xPositionLeft  = its current position - 1.  This will move the stripe to the left
+
+    if(xPositionRight[i] > (MATRIX_WIDTH + xTail[i]))     //Once the stripe scrolling to the right is no longer visable, assign a new position for it 
+    {
+      xPositionRight[i] = random(-25, -5);
+    }
+    else if(xPositionLeft[i] < (MATRIX_WIDTH - MATRIX_WIDTH - xTail[i])){   //Once the stripe scrolling to the Left is no longer visable, assign a new position for it 
+      xPositionLeft[i] = random(25, 45);
+    }
+    else 
+    {
+      fadeall();
+      //NOTE: I had to individually identify the Y values for each of these.  
+      //Scrolling to the Right 
+      leds(xPositionRight[0], 0) = CHSV(hue, 255, 255);        //Rows 0 - 4 scroll to the right 
+      leds(xPositionRight[0], 1) = CHSV(hue, 255, 255); 
+      leds(xPositionRight[0], 2) = CHSV(hue, 255, 255); 
+      leds(xPositionRight[0], 3) = CHSV(hue, 255, 255); 
+      leds(xPositionRight[0], 4) = CHSV(hue, 255, 255); 
+  
+      leds(xPositionRight[1], 10) = CHSV(hue, 255, 255);      //Rows 10 - 14 scroll to the right 
+      leds(xPositionRight[1], 11) = CHSV(hue, 255, 255); 
+      leds(xPositionRight[1], 12) = CHSV(hue, 255, 255); 
+      leds(xPositionRight[1], 13) = CHSV(hue, 255, 255); 
+      leds(xPositionRight[1], 14) = CHSV(hue, 255, 255); 
+
+ /*     leds(xPositionRight[2] - 20, 20) = CHSV(hue, 255, 255);      //Uncomment this our for when you have the full 24x24
+      leds(xPositionRight[2] - 21, 21) = CHSV(hue, 255, 255); 
+      leds(xPositionRight[2] - 22, 22) = CHSV(hue, 255, 255); 
+      leds(xPositionRight[2] - 23, 23) = CHSV(hue, 255, 255); 
+      leds(xPositionRight[2] - 24, 24) = CHSV(hue, 255, 255);  */
+
+      //Scrolling to the Left 
+      leds(xPositionLeft[0], 5) = CHSV(hue, 255, 255);        //Rows 5 - 9 scroll to the Left 
+      leds(xPositionLeft[0], 6) = CHSV(hue, 255, 255); 
+      leds(xPositionLeft[0], 7) = CHSV(hue, 255, 255); 
+      leds(xPositionLeft[0], 8) = CHSV(hue, 255, 255); 
+      leds(xPositionLeft[0], 9) = CHSV(hue, 255, 255); 
+      
+      leds(xPositionLeft[1], 15) = CHSV(hue, 255, 255);       //Rows 15 - 19 scroll to the LEft 
+      leds(xPositionLeft[1], 16) = CHSV(hue, 255, 255); 
+      leds(xPositionLeft[1], 17) = CHSV(hue, 255, 255); 
+      leds(xPositionLeft[1], 18) = CHSV(hue, 255, 255); 
+      leds(xPositionLeft[1], 19) = CHSV(hue, 255, 255); 
+    }
+  }
+  hue+=7;
+  angle+=4;
+  FastLED.delay(25);
+}
